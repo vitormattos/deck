@@ -959,6 +959,13 @@ For now only `deck_file` is supported as an attachment type.
 
 ### DELETE /boards/{boardId}/stacks/{stackId}/cards/{cardId}/attachments/{attachmentId} - Delete an attachment
 
+Delete will behave differently depending on the attachment type:
+
+- file
+    - If the file owner deletes it it will be moved to the trashbin
+    - If a share recipient of the file deletes it the share will be removed just for the user
+    - Problem: Users might want to remove the share to the board (preserve the file for the owner)
+    
 #### Request parameters
 
 | Parameter    | Type    | Description                                   |

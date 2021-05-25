@@ -49,7 +49,7 @@
 			</li>
 			<li v-for="attachment in attachments"
 				:key="attachment.id"
-				class="attachment">
+				class="attachment" :class="{ 'attachment--deleted': attachment.deletedAt > 0 }">
 				<a class="fileicon"
 					:style="mimetypeForAttachment(attachment)"
 					@click.prevent="showViewer(attachment)" />
@@ -58,9 +58,14 @@
 						<div class="filename">
 							<span class="basename">{{ attachment.data }}</span>
 						</div>
-						<span class="filesize">{{ formattedFileSize(attachment.extendedData.filesize) }}</span>
-						<span class="filedate">{{ relativeDate(attachment.createdAt*1000) }}</span>
-						<span class="filedate">{{ attachment.createdBy }}</span>
+						<div v-if="attachment.deletedAt === 0">
+							<span class="filesize">{{ formattedFileSize(attachment.extendedData.filesize) }}</span>
+							<span class="filedate">{{ relativeDate(attachment.createdAt*1000) }}</span>
+							<span class="filedate">{{ attachment.createdBy }}</span>
+						</div>
+						<div v-else>
+							<span class="attachment--info">{{ t('deck', 'Pending share') }}</span>
+						</div>
 					</a>
 				</div>
 				<Actions v-if="selectable">
@@ -143,6 +148,7 @@ export default {
 	},
 	computed: {
 		attachments() {
+			// FIXME sort propertly by last modified / deleted at
 			return [...this.$store.getters.attachmentsByCard(this.cardId)].filter(attachment => attachment.deletedAt >= 0).sort((a, b) => b.id - a.id)
 		},
 		mimetypeForAttachment() {
@@ -320,9 +326,10 @@ export default {
 					opacity: 0.7;
 				}
 			}
+			.attachment--info,
 			.filesize, .filedate {
 				font-size: 90%;
-				color: darkgray;
+				color: var(--color-text-maxcontrast);
 			}
 			.app-popover-menu-utils {
 				position: relative;

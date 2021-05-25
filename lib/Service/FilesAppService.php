@@ -48,7 +48,6 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 	private $configService;
 	private $l10n;
 	private $preview;
-	private $permissionService;
 	private $mimeTypeDetector;
 
 	public function __construct(
@@ -59,7 +58,6 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 		ConfigService $configService,
 		DeckShareProvider $shareProvider,
 		IPreview $preview,
-		PermissionService $permissionService,
 		IMimeTypeDetector $mimeTypeDetector,
 		string $userId = null
 	) {
@@ -76,9 +74,6 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 
 	public function listAttachments(int $cardId): array {
 		$shares = $this->shareProvider->getSharedWithByType($cardId, IShare::TYPE_DECK, -1, 0);
-		$shares = array_filter($shares, function ($share) {
-			return $share->getPermissions() > 0;
-		});
 		return array_map(function (IShare $share) use ($cardId) {
 			$file = $share->getNode();
 			$attachment = new Attachment();
@@ -89,7 +84,7 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 			$attachment->setData($file->getName());
 			$attachment->setLastModified($file->getMTime());
 			$attachment->setCreatedAt($share->getShareTime()->getTimestamp());
-			$attachment->setDeletedAt(0);
+			$attachment->setDeletedAt($share->getPermissions() === 0 ? $share->getShareTime()->getTimestamp() : 0);
 			return $attachment;
 		}, $shares);
 	}
@@ -144,6 +139,7 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 	}
 
 	public function display(Attachment $attachment) {
+		// Problem: Folders
 		/** @psalm-suppress InvalidCatch */
 		try {
 			$share = $this->shareProvider->getShareById($attachment->getId());
@@ -164,6 +160,9 @@ class FilesAppService implements IAttachmentService, ICustomAttachmentService {
 	public function create(Attachment $attachment) {
 		$file = $this->getUploadedFile();
 		$fileName = $file['name'];
+
+		// get shares for current card
+		// check if similar filename already exists
 
 		$userFolder = $this->rootFolder->getUserFolder($this->userId);
 		try {
